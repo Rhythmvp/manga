@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RHYTHM GUPTA // 巻一 — a manga of freedom, rhythm &amp; command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Reggae+One&family=Space+Mono:wght@400;700&family=Yuji+Boku&family=Yuji+Mai&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ================================================================
+   RHYTHM GUPTA — 巻一
+   a manga page you command.  themes: freedom · music · leadership.
+   ink + screentone + brush, original art (no licensed IP).
+   ================================================================ */
+
+:root{
+  --void:#0a0a0c;
+  --void-2:#14141b;
+  --paper:#e6e0d2;
+  --paper-2:#d8d2c2;
+  --ink:#0f0f12;
+  --ash:#6b6b73;
+  --signal:#d23b2e;     /* banner-red / resolve / record-light */
+  --sky:#8fb9c9;        /* the sky beyond the wall — used sparingly */
+  --gutter:#0a0a0c;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--void);color:var(--paper);
+  font-family:"Zen Kaku Gothic New",system-ui,sans-serif;line-height:1.65;
+  overflow-x:hidden;cursor:none;
+}
+body.locked{overflow:hidden;height:100vh}
+::selection{background:var(--signal);color:var(--void)}
+a{color:inherit}
+
+/* ---------- brush cursor + ink-trail canvas ---------- */
+#inkcanvas{position:fixed;inset:0;z-index:40;pointer-events:none}
+#cursor{
+  position:fixed;left:0;top:0;width:30px;height:30px;z-index:9999;pointer-events:none;
+  transform:translate(-3px,-3px) rotate(38deg);transition:transform .12s ease;
+}
+#cursor .handle{position:absolute;left:13px;top:-2px;width:3px;height:20px;background:var(--ink);border-radius:2px}
+#cursor .ferrule{position:absolute;left:11px;top:16px;width:7px;height:5px;background:var(--ash)}
+#cursor .tip{position:absolute;left:11px;top:20px;width:7px;height:12px;background:var(--signal);
+  border-radius:0 0 60% 60%;clip-path:polygon(0 0,100% 0,55% 100%,45% 100%)}
+#cursor.press{transform:translate(-3px,-3px) rotate(38deg) scale(.82)}
+
+/* ================================================================
+   ATMOSPHERE
+   ================================================================ */
+.atmos{position:fixed;inset:0;pointer-events:none;z-index:55}
+.scanlines{background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.16) 3px,rgba(0,0,0,0) 4px);animation:scan 9s linear infinite;opacity:.5}
+@keyframes scan{from{background-position:0 0}to{background-position:0 110px}}
+.vignette{background:radial-gradient(125% 100% at 50% 42%,transparent 52%,rgba(0,0,0,.6) 100%)}
+.grain{opacity:.05;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:170px;animation:gr .4s steps(3) infinite}
+@keyframes gr{0%{transform:translate(0,0)}50%{transform:translate(-3%,3%)}100%{transform:translate(2%,-2%)}}
+
+/* ================================================================
+   GLOBAL HUD (light, manga-editorial)
+   ================================================================ */
+#hud{position:fixed;inset:0;z-index:50;pointer-events:none}
+.brk{position:fixed;width:24px;height:24px;border:2px solid var(--signal);opacity:.8}
+.brk.tl{top:14px;left:14px;border-right:none;border-bottom:none}
+.brk.tr{top:14px;right:14px;border-left:none;border-bottom:none}
+.brk.bl{bottom:14px;left:14px;border-right:none;border-top:none}
+.brk.br{bottom:14px;right:14px;border-left:none;border-top:none}
+.hud-name{position:fixed;top:24px;left:34px;font-family:"DotGothic16",monospace}
+.hud-name .n{font-size:.82rem;letter-spacing:.2em;color:var(--paper)}
+.hud-name .r{font-size:.56rem;letter-spacing:.16em;color:var(--ash);margin-top:2px}
+.hud-ch{position:fixed;top:24px;right:34px;text-align:right;font-family:"DotGothic16",monospace}
+.hud-ch .c{font-size:.7rem;letter-spacing:.2em;color:var(--signal)}
+.hud-ch .t{font-size:.54rem;letter-spacing:.14em;color:var(--ash);margin-top:3px;max-width:200px}
+.ticker{position:fixed;left:34px;bottom:26px;right:120px;max-width:660px;font-family:"Space Mono",monospace;font-size:.64rem;letter-spacing:.05em;color:var(--ash);min-height:1.2em}
+.ticker b{color:var(--signal)}.ticker .car{color:var(--paper);animation:blink .8s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+#hud.dim{opacity:.18;transition:opacity .5s}
+
+/* sound toggle + EQ */
+#sound{position:fixed;right:30px;bottom:22px;z-index:70;pointer-events:auto;display:flex;align-items:flex-end;gap:8px;
+  font-family:"DotGothic16",monospace;font-size:.6rem;letter-spacing:.14em;color:var(--ash);background:none;border:none;cursor:none}
+#sound .eq{display:flex;align-items:flex-end;gap:2px;height:18px}
+#sound .eq i{width:3px;height:4px;background:var(--ash)}
+#sound.on{color:var(--signal)}
+#sound.on .eq i{background:var(--signal);animation:eq .9s ease-in-out infinite}
+#sound.on .eq i:nth-child(2){animation-delay:.15s}
+#sound.on .eq i:nth-child(3){animation-delay:.3s}
+#sound.on .eq i:nth-child(4){animation-delay:.45s}
+@keyframes eq{0%,100%{height:4px}50%{height:18px}}
+
+/* ================================================================
+   PAGE 1 — THE MANGA COVER (panel menu)
+   ================================================================ */
+#cover{min-height:100vh;width:100%;display:flex;align-items:center;justify-content:center;position:relative;padding:5.5vh 4vw}
+.page{
+  width:min(1180px,100%);background:var(--void);position:relative;
+  display:grid;gap:14px;
+  grid-template-columns:1.25fr 1fr 1fr .92fr;
+  grid-template-rows:auto auto auto;
+  grid-template-areas:
+    "name name name side"
+    "enter works journey side"
+    "contact contact contact side";
+}
+/* crop / registration marks around the page */
+.crop{position:absolute;width:18px;height:18px;border:1.5px solid var(--ash);opacity:.55}
+.crop.a{top:-26px;left:-26px;border-right:none;border-bottom:none}
+.crop.b{top:-26px;right:-26px;border-left:none;border-bottom:none}
+.crop.c{bottom:-26px;left:-26px;border-right:none;border-top:none}
+.crop.d{bottom:-26px;right:-26px;border-left:none;border-top:none}
+.regmark{position:absolute;top:-30px;left:50%;transform:translateX(-50%);display:flex;gap:4px}
+.regmark span{width:14px;height:8px}
+.regmark span:nth-child(1){background:var(--signal)}
+.regmark span:nth-child(2){background:var(--paper)}
+.regmark span:nth-child(3){background:var(--sky)}
+.regmark span:nth-child(4){background:var(--ash)}
+.vol{position:absolute;bottom:-28px;left:0;font-family:"DotGothic16",monospace;font-size:.6rem;letter-spacing:.2em;color:var(--ash)}
+.pgno{position:absolute;bottom:-28px;right:0;font-family:"DotGothic16",monospace;font-size:.6rem;letter-spacing:.2em;color:var(--ash)}
+.readhint{position:absolute;top:-30px;right:50px;font-family:"Space Mono",monospace;font-size:.56rem;letter-spacing:.1em;color:var(--ash)}
+
+/* a manga panel */
+.mpanel{
+  background:var(--paper);color:var(--ink);position:relative;overflow:hidden;
+  border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:1.5rem 1.6rem;
+}
+.mpanel::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.14;
+  background-image:radial-gradient(var(--ink) 1px,transparent 1.4px);background-size:5px 5px}
+.mpanel .num{position:absolute;top:8px;left:10px;font-family:"Yuji Mai",serif;font-size:1.05rem;color:var(--signal);
+  width:30px;height:30px;border:2px solid var(--signal);border-radius:50%;display:grid;place-items:center;background:var(--paper)}
+.mpanel .cn{position:absolute;top:9px;right:12px;font-family:"DotGothic16",monospace;font-size:.55rem;letter-spacing:.1em;color:var(--ash)}
+
+/* name / hero panel */
+.p-name{grid-area:name;display:flex;flex-direction:column;justify-content:center;min-height:46vh;
+  background:var(--void-2);color:var(--paper);border-color:var(--ink);box-shadow:6px 6px 0 var(--signal)}
+.p-name::before{opacity:.05}
+.speedlines{position:absolute;inset:0;opacity:.5;
+  background:repeating-conic-gradient(from 0deg at 78% 42%,transparent 0deg 3deg,rgba(143,185,201,.10) 3deg 4deg)}
+.kicker{font-family:"DotGothic16",monospace;font-size:.68rem;letter-spacing:.28em;color:var(--signal);margin-bottom:.9rem;position:relative}
+.bigname{font-family:"Yuji Mai",serif;font-size:clamp(3.2rem,8.5vw,7.2rem);line-height:.84;color:var(--paper);position:relative}
+.bigname .glitch{position:relative;display:inline-block}
+.bigname .glitch::before,.bigname .glitch::after{content:attr(data-t);position:absolute;left:0;top:0;mix-blend-mode:screen}
+.bigname .glitch::before{color:var(--signal);animation:g1 5s steps(2) infinite}
+.bigname .glitch::after{color:var(--sky);animation:g2 5s steps(2) infinite}
+@keyframes g1{0%,93%,100%{opacity:0;transform:translate(0)}94%{opacity:.85;transform:translate(-4px,2px)}97%{opacity:.6;transform:translate(3px,-2px)}}
+@keyframes g2{0%,93%,100%{opacity:0;transform:translate(0)}95%{opacity:.85;transform:translate(4px,-2px)}98%{opacity:.5;transform:translate(-3px,2px)}}
+.subname{font-family:"Yuji Mai",serif;font-size:1.5rem;color:var(--sky);letter-spacing:.3em;margin-top:.3rem;opacity:.8;position:relative}
+.tagline{margin-top:1.4rem;font-family:"Space Mono",monospace;font-size:.92rem;color:var(--ash);max-width:46ch;position:relative}
+.tagline .k{color:var(--paper)}.tagline .s{color:var(--signal)}
+/* original wings motif behind name */
+.wings{position:absolute;right:-30px;bottom:-30px;width:300px;height:300px;opacity:.5;pointer-events:none}
+
+/* menu option panels */
+.p-opt{cursor:none;text-decoration:none;display:flex;flex-direction:column;justify-content:flex-end;min-height:23vh;transition:transform .18s,box-shadow .18s}
+.p-opt:hover,.p-opt:focus-visible{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--signal);outline:none}
+.p-opt:hover .o-en{color:var(--signal)}
+.p-enter{grid-area:enter}.p-works{grid-area:works}.p-journey{grid-area:journey}
+.o-icon{width:42px;height:42px;margin-bottom:auto}
+.o-kanji{font-family:"Yuji Mai",serif;font-size:1.7rem;color:var(--ink);line-height:1}
+.o-en{font-family:"Reggae One",cursive;font-size:1.5rem;color:var(--ink);line-height:1;margin-top:.2rem;transition:color .15s}
+.o-sub{font-family:"Space Mono",monospace;font-size:.62rem;color:#3a3a3e;margin-top:.35rem;letter-spacing:.02em}
+
+/* contact panel (wide) */
+.p-contact{grid-area:contact;cursor:none;text-decoration:none;display:flex;align-items:center;gap:1.4rem;
+  background:var(--signal);color:var(--void);border-color:var(--ink);box-shadow:5px 5px 0 var(--ink);min-height:14vh;transition:transform .18s}
+.p-contact::before{opacity:.12}
+.p-contact:hover,.p-contact:focus-visible{transform:translate(-2px,-2px);outline:none}
+.p-contact .num{color:var(--void);border-color:var(--void);background:var(--signal)}
+.p-contact .o-kanji{color:var(--void)}.p-contact .o-en{color:var(--void)}
+.p-contact .o-sub{color:#3a0a08}
+.p-contact .bubble-ico{width:46px;height:46px;flex:none}
+
+/* side column — pillars */
+.p-side{grid-area:side;display:flex;flex-direction:column;gap:0;padding:0;background:var(--paper);overflow:hidden}
+.p-side .pillar{flex:1;padding:1.1rem 1.2rem;border-bottom:2px dashed rgba(15,15,18,.4);position:relative}
+.p-side .pillar:last-child{border-bottom:none}
+.pillar .pk{font-family:"Yuji Mai",serif;font-size:1.7rem;color:var(--ink);line-height:1}
+.pillar .pe{font-family:"DotGothic16",monospace;font-size:.62rem;letter-spacing:.16em;color:var(--signal);margin:.2rem 0 .4rem}
+.pillar .pl{font-family:"Space Mono",monospace;font-size:.64rem;color:#34343a;line-height:1.5}
+
+/* ================================================================
+   SPEECH-BUBBLE CONTACT OVERLAY
+   ================================================================ */
+#bubble-wrap{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:6vw;
+  background:rgba(10,10,12,.86)}
+#bubble-wrap.show{display:flex;animation:fade .25s}
+@keyframes fade{from{opacity:0}}
+#bubble-wrap::before{content:"";position:absolute;inset:0;opacity:.1;
+  background-image:radial-gradient(var(--paper) 1px,transparent 1.5px);background-size:6px 6px}
+.bubble{position:relative;background:var(--paper);color:var(--ink);border:3.5px solid var(--ink);
+  border-radius:34px;max-width:540px;width:100%;padding:2.6rem 2.6rem 2.2rem;box-shadow:8px 10px 0 var(--signal)}
+.bubble::after{content:"";position:absolute;left:64px;bottom:-34px;border:20px solid transparent;
+  border-top:36px solid var(--paper);filter:drop-shadow(0 4px 0 var(--ink))}
+.bubble .bx{position:absolute;left:60px;bottom:-46px;width:0;height:0;border:24px solid transparent;border-top:40px solid var(--ink);z-index:-1}
+.bubble h3{font-family:"Yuji Mai",serif;font-size:2.4rem;line-height:.95;margin-bottom:.3rem}
+.bubble .bk{font-family:"DotGothic16",monospace;font-size:.62rem;letter-spacing:.18em;color:var(--signal);margin-bottom:1.4rem}
+.bubble .blinks{display:flex;flex-direction:column;gap:.7rem}
+.bubble .blinks a{font-family:"Space Mono",monospace;font-size:.82rem;color:var(--ink);text-decoration:none;
+  border-bottom:1.5px solid rgba(15,15,18,.25);padding:.5rem 0 .5rem .2rem;display:flex;justify-content:space-between;align-items:center;transition:.15s}
+.bubble .blinks a:hover{color:var(--signal);border-color:var(--signal);padding-left:.7rem}
+.bubble .blinks a .arr{font-family:"DotGothic16",monospace;font-size:.7rem;color:var(--signal)}
+.bubble .close{position:absolute;top:14px;right:18px;font-family:"DotGothic16",monospace;font-size:.9rem;
+  background:none;border:none;color:var(--ink);cursor:none}
+.bubble .close:hover{color:var(--signal)}
+
+/* ================================================================
+   STORY (scroll chapters)
+   ================================================================ */
+.world{position:relative;z-index:10;max-width:1180px;margin:0 auto;padding:0 6vw}
+.chapter{min-height:100vh;padding:15vh 0 11vh;position:relative}
+.eyebrow{font-family:"DotGothic16",monospace;font-size:.72rem;letter-spacing:.28em;color:var(--signal);display:flex;align-items:center;gap:14px;margin-bottom:1.4rem}
+.eyebrow .jp{font-family:"Yuji Mai",serif;font-size:1.2rem;color:var(--sky)}
+.eyebrow::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--signal),transparent)}
+.rise{opacity:0;transform:translateY(40px) rotate(-.5deg);transition:opacity .8s,transform .8s}
+.rise.seen{opacity:1;transform:none}
+.sfx{position:absolute;font-family:"Yuji Boku",serif;color:var(--signal);opacity:.16;pointer-events:none;z-index:0;line-height:.8}
+
+/* CH1 — manifesto / status */
+.man-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:2.4rem;align-items:start}
+.portrait{position:relative;background:var(--void-2);border:3px solid var(--ink);box-shadow:6px 6px 0 var(--signal);overflow:hidden}
+.portrait img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;filter:grayscale(30%) saturate(0.85);mix-blend-mode:luminosity;pointer-events:none}
+.portrait svg{position:relative;display:block;width:100%;height:auto;z-index:1}
+.portrait .lab{position:absolute;bottom:8px;left:10px;font-family:"DotGothic16",monospace;font-size:.58rem;letter-spacing:.14em;color:var(--ash)}
+.traits{display:flex;flex-direction:column;gap:.85rem;margin-bottom:1.6rem}
+.trait{font-family:"Space Mono",monospace}
+.trait .tt{display:flex;justify-content:space-between;font-size:.7rem;margin-bottom:5px}
+.trait .tt .nm{color:var(--paper)}.trait .tt .vl{color:var(--signal)}
+.trait .pips{display:flex;gap:4px}
+.trait .pips span{flex:1;height:8px;background:rgba(107,107,115,.22);border:1px solid rgba(107,107,115,.4)}
+.trait .pips span.f{background:var(--signal);border-color:var(--signal)}
+.lore{font-size:.96rem;color:var(--paper);border-left:2px solid var(--signal);padding-left:1.2rem;max-width:62ch}
+.lore .sys{font-family:"Space Mono",monospace;color:var(--ash);font-size:.78rem;display:block;margin-bottom:.4rem}
+.lore strong{color:#fff}
+.poet{margin-top:1.2rem;font-family:"Yuji Mai",serif;font-size:1.15rem;color:var(--sky);letter-spacing:.04em}
+
+/* CH2 — quests */
+.quests{display:flex;flex-direction:column;gap:2.2rem}
+.quest{display:grid;grid-template-columns:auto 1fr;gap:1.6rem;align-items:start}
+.quest .node{font-family:"Yuji Mai",serif;font-size:1.3rem;color:var(--signal);border:2px solid var(--signal);width:56px;height:56px;display:grid;place-items:center;flex:none;position:relative;background:var(--void)}
+.quest .node::after{content:"";position:absolute;top:56px;left:50%;width:1px;height:calc(100% + 1.6rem);background:linear-gradient(var(--signal),transparent)}
+.quest:last-child .node::after{display:none}
+.quest .tag{font-family:"DotGothic16",monospace;font-size:.6rem;letter-spacing:.14em;color:var(--ash);margin-bottom:.45rem}
+.quest .tag b{color:var(--signal)}
+.quest h3{font-family:"Yuji Mai",serif;font-size:1.8rem;color:var(--paper);line-height:1;margin-bottom:.25rem}
+.quest .where{font-family:"Space Mono",monospace;font-size:.72rem;color:var(--ash);margin-bottom:.8rem}
+.quest ul{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+.quest li{font-size:.9rem;color:var(--paper);padding-left:1.1rem;position:relative}
+.quest li::before{content:"\25B8";position:absolute;left:0;color:var(--signal);font-size:.68rem;top:.18rem}
+.quest li b{color:#fff}
+
+/* CH3 — featured work */
+.boss{display:grid;grid-template-columns:1.05fr .95fr;gap:2.2rem;align-items:stretch}
+.feat{background:var(--void-2);border:3px solid var(--ink);box-shadow:8px 8px 0 var(--signal);padding:2.2rem;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.warn{font-family:"DotGothic16",monospace;font-size:.68rem;letter-spacing:.22em;color:var(--signal);margin-bottom:1rem;display:flex;align-items:center;gap:10px}
+.warn .bl{animation:blink 1s steps(2) infinite}
+.feat h3{font-family:"Yuji Mai",serif;font-size:clamp(2.4rem,5vw,3.6rem);line-height:.9;color:var(--paper);margin-bottom:.4rem}
+.feat .sub{font-family:"Space Mono",monospace;font-size:.76rem;color:var(--ash);margin-bottom:1.3rem}
+.feat .desc{font-size:.95rem;color:var(--paper);margin-bottom:1.3rem;max-width:48ch}
+.feat .desc b{color:#fff}
+.feat-list{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.5rem}
+.feat-list div{font-family:"Space Mono",monospace;font-size:.68rem;color:var(--ash);padding:.45rem .6rem;border:1px solid rgba(107,107,115,.4)}
+.feat-list b{color:var(--signal)}
+.link{font-family:"DotGothic16",monospace;font-size:.72rem;letter-spacing:.18em;color:var(--void);background:var(--signal);padding:.7rem 1.4rem;text-decoration:none;align-self:flex-start;cursor:none}
+.link:hover{background:var(--paper)}
+.closure{display:flex;flex-direction:column;justify-content:center}
+.closure .panel-ink-h{font-family:"Yuji Mai",serif;font-size:2rem;color:var(--ink);margin:.3rem 0}
+
+/* CH4 — world beyond the wall */
+.wall-scene{position:relative;border:3px solid var(--ink);box-shadow:8px 8px 0 var(--sky);margin-bottom:2.2rem;overflow:hidden;background:var(--void-2)}
+.wall-scene svg{display:block;width:100%;height:auto}
+.world-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.place .panel-ink-h{font-family:"Yuji Mai",serif;font-size:1.5rem;color:var(--ink);line-height:1}
+.place .meta{font-family:"DotGothic16",monospace;font-size:.6rem;letter-spacing:.13em;color:var(--signal)}
+.place p{font-size:.9rem;color:#2a2a2e;margin-top:.7rem}
+.place .award{display:inline-block;font-family:"DotGothic16",monospace;font-size:.55rem;letter-spacing:.1em;color:var(--paper);background:var(--signal);padding:.25rem .55rem;margin-top:.6rem}
+.tilt-l{transform:rotate(-1deg)}.tilt-r{transform:rotate(1deg)}
+
+/* CH5 — arsenal */
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:1rem}
+.item{background:var(--void-2);border:1.5px solid rgba(107,107,115,.5);padding:1rem 1.1rem;font-family:"Space Mono",monospace;transition:.2s;position:relative}
+.item:hover{border-color:var(--signal);transform:translateY(-3px)}
+.item .cat{font-family:"DotGothic16",monospace;font-size:.58rem;letter-spacing:.12em;color:var(--signal);margin-bottom:.5rem;display:block}
+.item .list{font-size:.74rem;color:var(--paper);line-height:1.7}
+.item.star{border-color:var(--signal);box-shadow:4px 4px 0 var(--signal)}
+.certs{margin-top:1.6rem;display:flex;flex-wrap:wrap;gap:.5rem}
+.certs span{font-family:"Space Mono",monospace;font-size:.66rem;color:var(--ash);border:1px solid rgba(107,107,115,.4);padding:.3rem .6rem}
+.certs span b{color:var(--signal)}
+
+/* CH6 — save point */
+#save{text-align:center}
+.savept{font-family:"DotGothic16",monospace;color:var(--signal);font-size:.8rem;letter-spacing:.3em;margin-bottom:1rem;animation:blink 1.4s steps(2) infinite}
+.save-h{font-family:"Yuji Mai",serif;font-size:clamp(2.6rem,8vw,6rem);line-height:.9;margin-bottom:1.2rem}
+.save-line{font-family:"Space Mono",monospace;color:var(--ash);font-size:.9rem;margin-bottom:2.6rem}
+.links{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center}
+.links a{font-family:"DotGothic16",monospace;font-size:.76rem;letter-spacing:.13em;color:var(--paper);text-decoration:none;border:2px solid var(--paper);padding:.9rem 1.5rem;transition:.2s;cursor:none}
+.links a::before{content:"\25B8 ";color:var(--signal)}
+.links a:hover{background:var(--signal);border-color:var(--signal);color:var(--void)}
+.links a:hover::before{color:var(--void)}
+.tothetop{margin-top:2.6rem;font-family:"DotGothic16",monospace;font-size:.66rem;letter-spacing:.2em;color:var(--ash);text-decoration:none;cursor:none}
+.tothetop:hover{color:var(--signal)}
+.footer-sys{margin-top:3.5rem;font-family:"Space Mono",monospace;font-size:.62rem;color:var(--ash);letter-spacing:.08em;line-height:1.9}
+.footer-sys b{color:var(--signal)}
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media(max-width:900px){
+  body{cursor:auto}#cursor,#inkcanvas{display:none}
+  .page{grid-template-columns:1fr 1fr;
+    grid-template-areas:"name name" "side side" "enter works" "journey contact"}
+  .p-side{flex-direction:row}
+  .p-side .pillar{border-bottom:none;border-right:2px dashed rgba(15,15,18,.4)}
+  .p-side .pillar:last-child{border-right:none}
+  .man-grid,.boss{grid-template-columns:1fr}
+  .world-strip{grid-template-columns:1fr}
+  .ticker{right:90px;font-size:.56rem}
+  .quest{grid-template-columns:1fr}.quest .node{display:none}
+  .hud-name{left:18px}.hud-ch{right:18px}
+}
+@media(max-width:560px){
+  .page{grid-template-columns:1fr;grid-template-areas:"name" "side" "enter" "works" "journey" "contact"}
+  .p-side{flex-direction:column}
+  .p-side .pillar{border-right:none;border-bottom:2px dashed rgba(15,15,18,.4)}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important}
+  .scanlines,.grain,#inkcanvas{display:none}
+  .rise{opacity:1;transform:none}
+  body{cursor:auto}#cursor{display:none}
+}
+</style>
+</head>
+<body class="locked">
+
+<canvas id="inkcanvas" aria-hidden="true"></canvas>
+<div id="cursor" aria-hidden="true"><span class="handle"></span><span class="ferrule"></span><span class="tip"></span></div>
+
+<!-- ATMOSPHERE -->
+<div class="atmos scanlines" aria-hidden="true"></div>
+<div class="atmos vignette" aria-hidden="true"></div>
+<div class="atmos grain" aria-hidden="true"></div>
+
+<!-- HUD -->
+<div id="hud" aria-hidden="true">
+  <div class="brk tl"></div><div class="brk tr"></div><div class="brk bl"></div><div class="brk br"></div>
+  <div class="hud-name"><div class="n">RHYTHM GUPTA</div><div class="r">FREEDOM · RHYTHM · COMMAND</div></div>
+  <div class="hud-ch"><div class="c" id="ch-no">巻一</div><div class="t" id="ch-ttl">TITLE PAGE</div></div>
+  <div class="ticker"><span id="ticker-txt"></span><span class="car">_</span></div>
+</div>
+<button id="sound" aria-label="Toggle ambient sound"><span class="eq"><i></i><i></i><i></i><i></i></span>SOUND</button>
+
+<!-- ================= PAGE 1 — MANGA COVER ================= -->
+<section id="cover" data-ch="巻一" data-title="TITLE PAGE" data-tick="読み始める ▸ <b>read right to left.</b> pick a panel.">
+  <div class="page">
+    <div class="crop a"></div><div class="crop b"></div><div class="crop c"></div><div class="crop d"></div>
+    <div class="regmark"><span></span><span></span><span></span><span></span></div>
+    <div class="readhint">読 ←  right&nbsp;to&nbsp;left</div>
+    <div class="vol">巻一 · VOL.01 · "FREEDOM HAS A BEAT"</div>
+    <div class="pgno">001</div>
+
+    <!-- NAME / HERO -->
+    <div class="mpanel p-name">
+      <div class="speedlines"></div>
+      <span class="num">弐</span><span class="cn" style="color:var(--ash)">COVER</span>
+      <!-- original wings motif -->
+      <svg class="wings" viewBox="0 0 300 300" aria-hidden="true">
+        <g fill="none" stroke="#8fb9c9" stroke-width="2" stroke-linecap="round" opacity="0.7">
+          <path d="M150 150 q-50 -40 -110 -30 q40 8 60 30 q-44 -6 -70 14 q42 -2 66 18 q-36 2 -54 24 q44 -10 72 6"/>
+          <path d="M150 150 q50 -40 110 -30 q-40 8 -60 30 q44 -6 70 14 q-42 -2 -66 18 q36 2 54 24 q-44 -10 -72 6"/>
+        </g>
+        <circle cx="150" cy="150" r="5" fill="#d23b2e"/>
+      </svg>
+      <div class="kicker">PLAYER 01 // CREATIVE STRATEGIST</div>
+      <h1 class="bigname"><span class="glitch" data-t="RHYTHM">RHYTHM</span><br>GUPTA</h1>
+      <div class="subname">律動 — the beat you lead by</div>
+      <p class="tagline"><span class="k">Creative strategist. Team leader. Published poet.</span> I turn scattered people and half-ideas into things that ship — and chase <span class="s">a little freedom</span> on the way.</p>
+    </div>
+
+    <!-- MENU: ENTER -->
+    <a class="mpanel p-opt p-enter" href="#status" data-nav>
+      <span class="num">参</span><span class="cn">START</span>
+      <svg class="o-icon" viewBox="0 0 40 40" aria-hidden="true"><g stroke="#0f0f12" stroke-width="2.4" fill="none" stroke-linecap="round"><path d="M8 32 V12 h24 V32"/><path d="M4 32 h32"/><path d="M20 12 V4"/></g><path d="M16 24 l8 0 M21 21 l3 3 -3 3" stroke="#d23b2e" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+      <div class="o-kanji">壱・始</div>
+      <div class="o-en">ENTER</div>
+      <div class="o-sub">begin the story ▸</div>
+    </a>
+
+    <!-- MENU: WORKS -->
+    <a class="mpanel p-opt p-works" href="#boss" data-nav>
+      <span class="num">肆</span><span class="cn">WORKS</span>
+      <svg class="o-icon" viewBox="0 0 40 40" aria-hidden="true"><g stroke="#0f0f12" stroke-width="2.4" fill="none" stroke-linecap="round"><path d="M8 6 h20 v28 h-20 z"/><path d="M12 14 h12 M12 20 h12 M12 26 h8"/></g><path d="M30 4 l4 4 -16 16 -5 1 1 -5 z" fill="#d23b2e" stroke="#0f0f12" stroke-width="1.6"/></svg>
+      <div class="o-kanji">弐・作</div>
+      <div class="o-en">WORKS</div>
+      <div class="o-sub">what I've led &amp; built ▸</div>
+    </a>
+
+    <!-- MENU: JOURNEY -->
+    <a class="mpanel p-opt p-journey" href="#wall" data-nav>
+      <span class="num">伍</span><span class="cn">JOURNEY</span>
+      <svg class="o-icon" viewBox="0 0 40 40" aria-hidden="true"><g stroke="#0f0f12" stroke-width="2.4" fill="none" stroke-linecap="round"><path d="M4 30 l10 -14 8 9 6 -8 8 13"/><path d="M2 34 h36"/></g><path d="M26 8 q4 -3 8 0 q-3 2 -6 0 q3 2 5 5 q-4 -1 -7 -1" fill="none" stroke="#d23b2e" stroke-width="2"/></svg>
+      <div class="o-kanji">参・旅</div>
+      <div class="o-en">JOURNEY</div>
+      <div class="o-sub">beyond the wall ▸</div>
+    </a>
+
+    <!-- CONTACT (on first page) -->
+    <a class="mpanel p-contact" href="#" id="open-bubble">
+      <span class="num">肆</span>
+      <svg class="bubble-ico" viewBox="0 0 48 48" aria-hidden="true"><g stroke="#0a0a0c" stroke-width="2.6" fill="#e6e0d2" stroke-linejoin="round"><path d="M6 8 h36 v24 h-22 l-8 8 v-8 h-6 z"/></g><path d="M14 18 h20 M14 24 h14" stroke="#d23b2e" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <div>
+        <div class="o-kanji">肆・連絡</div>
+        <div class="o-en">CONTACT ME</div>
+        <div class="o-sub">don't scroll — just say hi ▸</div>
+      </div>
+    </a>
+
+    <!-- SIDE: PILLARS -->
+    <div class="mpanel p-side">
+      <div class="pillar"><div class="pk">自由</div><div class="pe">FREEDOM</div><div class="pl">Walls end. Skies don't. I build toward the open.</div></div>
+      <div class="pillar"><div class="pk">律動</div><div class="pe">RHYTHM</div><div class="pl">My name is the method — find the beat, move the room.</div></div>
+      <div class="pillar"><div class="pk">統率</div><div class="pe">COMMAND</div><div class="pl">Lead from the front. Share the credit. Carry the weight.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STORY ================= -->
+<main class="world">
+
+  <!-- CH1 — MANIFESTO -->
+  <section class="chapter" id="status" data-ch="第一話" data-title="WHO IS THIS" data-tick="reading character sheet… <b>stats high. sleep low.</b>">
+    <div class="sfx" style="top:6%;right:2%;font-size:7rem;transform:rotate(-8deg)">ドクン</div>
+    <div class="eyebrow rise"><span class="jp">第一話</span> CH.01 — THE PERSON BEHIND THE PANELS</div>
+    <div class="man-grid">
+      <div class="portrait rise">
+        <img class="panel-photo" src="rhythm.png" alt="Rhythm portrait behind the panel"/>
+        <svg viewBox="0 0 300 380" role="img" aria-label="Abstract ink portrait of a figure facing an open horizon">
+          <rect width="300" height="380" fill="#14141b"/>
+          <circle cx="150" cy="130" r="130" fill="#d23b2e" opacity="0.06"/>
+          <!-- horizon / sky beyond -->
+          <line x1="0" y1="250" x2="300" y2="250" stroke="#8fb9c9" stroke-width="1.5" opacity="0.5"/>
+          <path d="M0 250 q150 -20 300 0" stroke="#8fb9c9" stroke-width="1" fill="none" opacity="0.3"/>
+          <!-- figure facing away toward horizon -->
+          <g fill="none" stroke="#e6e0d2" stroke-width="2.4" stroke-linecap="round">
+            <path d="M112 150 q40 -52 76 0 q5 38 -38 44 q-43 -6 -38 -44Z"/>
+            <path d="M86 330 q-2 -92 64 -116"/>
+            <path d="M214 330 q2 -92 -64 -116"/>
+          </g>
+          <!-- hair brush -->
+          <g stroke="#e6e0d2" stroke-width="2" fill="none" opacity="0.9">
+            <path d="M114 122 q10 -18 22 -10"/><path d="M130 112 q14 -20 28 -8"/><path d="M152 108 q16 -16 30 -2"/>
+          </g>
+          <!-- one bird ahead = freedom -->
+          <path d="M210 70 q8 -6 16 0 q-6 4 -12 0 q6 4 10 9 q-8 -2 -14 -2" stroke="#8fb9c9" stroke-width="2" fill="none"/>
+          <!-- resolve drop -->
+          <circle cx="150" cy="205" r="4" fill="#d23b2e"/><path d="M150 209 q-3 16 0 26 q3 -10 0 -26" fill="#d23b2e"/>
+          <rect x="0" y="178" width="300" height="4" fill="#8fb9c9" opacity="0.35"/>
+        </svg>
+        <div class="lab">PORTRAIT · facing the horizon · 36% noise</div>
+      </div>
+      <div>
+        <div class="traits rise">
+          <div class="trait"><div class="tt"><span class="nm">LEADERSHIP &amp; RALLYING</span><span class="vl">A+</span></div><div class="pips"><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span></div></div>
+          <div class="trait"><div class="tt"><span class="nm">CREATIVE DIRECTION</span><span class="vl">A</span></div><div class="pips"><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span></span></div></div>
+          <div class="trait"><div class="tt"><span class="nm">STAKEHOLDER &amp; COMMS</span><span class="vl">A</span></div><div class="pips"><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span></span></div></div>
+          <div class="trait"><div class="tt"><span class="nm">CROSS-CULTURAL COMMAND</span><span class="vl">S</span></div><div class="pips"><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span></div></div>
+          <div class="trait"><div class="tt"><span class="nm">PUBLIC SPEAKING</span><span class="vl">A</span></div><div class="pips"><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span class="f"></span><span></span></div></div>
+        </div>
+        <div class="lore rise">
+          <span class="sys">// LORE ENTRY 001</span>
+          I lead people toward things they can't quite see yet. I've run a six-person team from blank page to launch,
+          hosted an international CMO roundtable, represented India in two fully-funded Indonesia programs,
+          and led <strong>14+ country teams</strong> to award-winning outcomes. I reached
+          <strong>2,500+ students</strong> as a campus speaker and turned that into <strong>300+ applications</strong>.
+          The tech degree taught me how things are built — but what I do is rally the room and hold the vision.
+          <div class="poet">— and on the side, a published poet. 言葉も、武器。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CH2 — QUEST LOG -->
+  <section class="chapter" id="quests" data-ch="第二話" data-title="QUEST LOG" data-tick="quest log open. <b>three contracts. zero excuses.</b>">
+    <div class="eyebrow rise"><span class="jp">第二話</span> CH.02 — QUEST LOG · THE WORK</div>
+    <div class="quests">
+      <div class="quest rise">
+        <div class="node">壱</div>
+        <div>
+          <div class="tag"><b>ACTIVE</b> · APR 2026 — MAY 2026 · CONTRACT</div>
+          <h3>Growth &amp; Strategy Intern</h3>
+          <div class="where">Rabbitt AI · Onsite</div>
+          <ul>
+            <li><b>Led the play:</b> conceptualized and ran an international executive roundtable — direct outreach to CMOs and senior marketing leaders to spark strategic partnerships.</li>
+            <li><b>Found the right rooms:</b> built a 350+ contact map and qualified C-suite decision-makers — <b>14% positive response, 50+ senior leaders engaged.</b></li>
+            <li><b>Moved the pipeline:</b> supported multi-million-dollar growth through sharp lead generation, conversion thinking, and stakeholder comms.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="quest rise">
+        <div class="node">弐</div>
+        <div>
+          <div class="tag"><b>CLEARED</b> · APR 2025 — JAN 2026 · FREELANCE</div>
+          <h3>Product &amp; Operations Consultant</h3>
+          <div class="where">FixYourHR · Remote</div>
+          <ul>
+            <li><b>Owned it end-to-end:</b> ran HR workflow modules from gathering what people actually needed, through testing, to a live rollout.</li>
+            <li><b>Held the middle:</b> translated messy operational asks into clear plans and kept product, engineering, and business pulling the same way.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="quest rise">
+        <div class="node">参</div>
+        <div>
+          <div class="tag"><b>SIDE QUEST</b> · JAN 2026 — APR 2026 · SELF-DIRECTED</div>
+          <h3>Independent Growth Consultant</h3>
+          <div class="where">Remote · Asia-Pacific</div>
+          <ul>
+            <li><b>Crossed the wall:</b> studied Japanese while living in Indonesia, building an Asia-Pacific network and real feel for the region.</li>
+            <li><b>Sharpened the blade:</b> took independent outreach and growth projects — the foundation that unlocked the Rabbitt AI role.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CH3 — FEATURED WORK -->
+  <section class="chapter" id="boss" data-ch="第三話" data-title="FEATURED WORK" data-tick="<b>boss encountered:</b> MediSync. shipped. survived.">
+    <div class="sfx" style="bottom:4%;left:1%;font-size:8rem;transform:rotate(6deg)">ドン</div>
+    <div class="eyebrow rise"><span class="jp">第三話</span> CH.03 — FEATURED WORK · WHERE I LED</div>
+    <div class="boss">
+      <div class="feat rise">
+        <div class="warn"><span class="bl">▲</span> COMMAND ROLE — 6 PEOPLE · 4 MONTHS</div>
+        <h3>MediSync</h3>
+        <div class="sub">healthtech platform · my role: Project Manager &amp; creative lead</div>
+        <p class="desc">My job wasn't to write the code — it was to <b>hold the vision, set the rhythm, unblock people, and carry it</b> from a blank page to a shipped product. I owned scope, the stakeholder map, sprint planning, change management, status reporting, handover, and the closure report.</p>
+        <div class="feat-list">
+          <div><b>›</b> defined the vision</div>
+          <div><b>›</b> onboarded the team</div>
+          <div><b>›</b> ran every sprint</div>
+          <div><b>›</b> shipped &amp; handed over</div>
+        </div>
+        <a class="link" href="https://medisync-rho.vercel.app" target="_blank" rel="noopener">VIEW THE BUILD ▸</a>
+      </div>
+      <div class="mpanel tilt-r rise closure">
+        <span class="cn" style="color:var(--ash)">CLOSURE</span>
+        <div style="font-family:'DotGothic16',monospace;font-size:.62rem;letter-spacing:.13em;color:var(--signal)">// FORMAL CLOSURE REPORT</div>
+        <h3 class="panel-ink-h">scope → ship → handover.</h3>
+        <p style="font-size:.92rem;color:#2a2a2e;margin-top:.4rem">Most people can start a project. Fewer can land one — clean, documented, handed over, closed. That's the part I'm proud of: I finish, and I bring the team across with me.</p>
+        <div style="margin-top:1.2rem;font-family:'DotGothic16',monospace;font-size:.62rem;color:#2a2a2e">STATUS: <span style="color:var(--signal)">DELIVERED</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CH4 — BEYOND THE WALL -->
+  <section class="chapter" id="wall" data-ch="第四話" data-title="BEYOND THE WALL" data-tick="<b>the wall opens.</b> 14+ countries. one passport.">
+    <div class="sfx" style="top:9%;right:1%;font-size:6rem;transform:rotate(-6deg)">バサッ</div>
+    <div class="eyebrow rise"><span class="jp">第四話</span> CH.04 — BEYOND THE WALL · LEADERSHIP ABROAD</div>
+    <div class="wall-scene rise">
+      <svg viewBox="0 0 1000 240" role="img" aria-label="An ink wall cracking open to reveal an open sky with birds">
+        <rect width="1000" height="240" fill="#14141b"/>
+        <!-- sky beyond the crack -->
+        <rect x="430" y="0" width="140" height="240" fill="#8fb9c9" opacity="0.10"/>
+        <g stroke="#8fb9c9" stroke-width="1.5" fill="none" opacity="0.6">
+          <path d="M470 40 q8 -6 16 0 q-6 4 -12 0 q6 4 10 8 q-8 -1 -14 -1"/>
+          <path d="M520 70 q7 -5 14 0 q-5 3 -10 0 q5 3 9 7 q-7 -1 -12 -1"/>
+          <path d="M500 110 q6 -5 12 0 q-4 3 -9 0 q5 3 8 6 q-6 -1 -11 -1"/>
+        </g>
+        <!-- wall halves with jagged crack -->
+        <g fill="#0f0f12" stroke="#e6e0d2" stroke-width="2">
+          <path d="M0 0 H430 L470 60 L440 110 L480 170 L450 240 H0 Z"/>
+          <path d="M1000 0 H570 L535 60 L565 110 L525 170 L555 240 H1000 Z"/>
+        </g>
+        <!-- brick lines (screentone-ish) -->
+        <g stroke="#e6e0d2" stroke-width="0.6" opacity="0.25">
+          <line x1="0" y1="48" x2="430" y2="48"/><line x1="0" y1="96" x2="445" y2="96"/><line x1="0" y1="144" x2="470" y2="144"/><line x1="0" y1="192" x2="450" y2="192"/>
+          <line x1="600" y1="48" x2="1000" y2="48"/><line x1="560" y1="96" x2="1000" y2="96"/><line x1="540" y1="144" x2="1000" y2="144"/><line x1="560" y1="192" x2="1000" y2="192"/>
+        </g>
+        <!-- small figure stepping toward the light -->
+        <g fill="none" stroke="#d23b2e" stroke-width="2.4" stroke-linecap="round">
+          <circle cx="500" cy="150" r="9"/><path d="M500 159 v30"/><path d="M500 170 l-14 -8 M500 170 l14 -8"/><path d="M500 189 l-12 18 M500 189 l12 18"/>
+        </g>
+      </svg>
+    </div>
+    <div class="world-strip">
+      <div class="mpanel tilt-l place rise">
+        <span class="cn" style="color:var(--ash)">SURABAYA</span>
+        <div class="meta">ITS · 2025</div>
+        <h3 class="panel-ink-h">CommTech ITS</h3>
+        <p>Sole Indian participant from a global pool. Led a 14+ country team to victory under competition pressure — sharpening cross-cultural leadership, executive communication, and design thinking.</p>
+        <span class="award">★ BEST PROJECT</span> <span class="award">MOST CURIOUS</span>
+      </div>
+      <div class="mpanel place rise">
+        <span class="cn" style="color:var(--ash)">BANDUNG</span>
+        <div class="meta">TELKOM UNIV · 2025</div>
+        <h3 class="panel-ink-h">ASEAN-African Youth Forum</h3>
+        <p>India delegate. Co-built a community-heritage proposal with delegates across Asia-Pacific and Africa — work that fed Bandung's formal bid for UNESCO World Heritage status.</p>
+        <span class="award">INDIA DELEGATE</span>
+      </div>
+      <div class="mpanel tilt-r place rise">
+        <span class="cn" style="color:var(--ash)">CAMPUS</span>
+        <div class="meta">GO GLOBAL · CAMPUS REP</div>
+        <h3 class="panel-ink-h">Rally &amp; Convert</h3>
+        <p>Reached 2,500+ students as a campus speaker and drove 300+ applications through conversion-focused sessions — with measurable follow-through tracking.</p>
+        <span class="award">300+ CONVERTED</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CH5 — ARSENAL -->
+  <section class="chapter" id="inventory" data-ch="第五話" data-title="ARSENAL" data-tick="inventory open. <b>words are a weapon too.</b>">
+    <div class="eyebrow rise"><span class="jp">第五話</span> CH.05 — ARSENAL · SKILLS &amp; TOOLS</div>
+    <div class="inv-grid">
+      <div class="item star rise"><span class="cat">★ SIGNATURE — CREATIVE VOICE</span><div class="list">published poet (The Writer's Pocket) · storytelling · public speaking (2,500+) · executive written comms</div></div>
+      <div class="item rise"><span class="cat">LEADERSHIP &amp; STRATEGY</span><div class="list">team leadership · cross-cultural command · growth strategy · B2B &amp; executive outreach · stakeholder engagement</div></div>
+      <div class="item rise"><span class="cat">PROJECT MANAGEMENT</span><div class="list">lifecycle (init → closure) · scope · sprint planning · change management · status reporting · Agile/Scrum · Design Thinking</div></div>
+      <div class="item rise"><span class="cat">EDUCATION</span><div class="list">BE Computer Science — Chitkara (CGPA 8.79) · BE Info Systems exchange — Telkom, Indonesia (100% scholarship)</div></div>
+      <div class="item rise"><span class="cat">LANGUAGES</span><div class="list">English · Hindi · Japanese (learning) · cross-cultural fluency</div></div>
+      <div class="item rise"><span class="cat">ALSO FLUENT IN (TECH)</span><div class="list">cloud fundamentals · Gen AI · SAP HR050 · CRM &amp; research tools · DevOps basics</div></div>
+    </div>
+    <div class="certs rise">
+      <span><b>›</b> Cloud Computing — Leeds</span><span><b>›</b> Cloud Foundations — Duke</span>
+      <span><b>›</b> Modern AI — Cisco</span><span><b>›</b> Design Thinking — Virginia</span>
+      <span><b>›</b> Agile &amp; Scrum — IBM</span><span><b>›</b> Marketing Analytics — Meta</span>
+      <span><b>›</b> SAP HR050</span><span><b>›</b> Cybersecurity — Deloitte</span>
+    </div>
+  </section>
+
+  <!-- CH6 — SAVE POINT -->
+  <section class="chapter" id="save" data-ch="終話" data-title="SAVE POINT" data-tick="<b>save point reached.</b> the static clears for a moment.">
+    <div class="savept rise">◆ 終話 · SAVE POINT REACHED ◆</div>
+    <h2 class="save-h glitch rise" data-t="LET'S TALK"><span>LET'S TALK</span></h2>
+    <p class="save-line rise">the beat's still going. if any of this resonated — reach out.</p>
+    <div class="links rise">
+      <a href="mailto:rhythmpg05@gmail.com">EMAIL</a>
+      <a href="tel:+917973496638">+91-7973496638</a>
+      <a href="https://www.linkedin.com/in/rhythmgupta2405/" data-fill="LinkedIn">LINKEDIN</a>
+      <a href="https://github.com/Rhythmvp" data-fill="GitHub">GITHUB</a>
+      <a href="https://rhythm-production.vercel.app/" data-fill="Portfolio">PORTFOLIO</a>
+    </div>
+    <a class="tothetop" href="#cover">▴ BACK TO THE TITLE PAGE</a>
+    <div class="footer-sys rise">
+      巻一 · session logged · <b>walls end · skies don't</b><br>
+      designed in ink, screentone &amp; brush · © RHYTHM GUPTA
+    </div>
+  </section>
+</main>
+
+<!-- ================= CONTACT BUBBLE ================= -->
+<div id="bubble-wrap" role="dialog" aria-modal="true" aria-label="Contact Rhythm Gupta">
+  <div class="bubble">
+    <span class="bx"></span>
+    <button class="close" id="close-bubble" aria-label="Close">✕ 閉</button>
+    <h3>言、交わそう。</h3>
+    <div class="bk">// SAY SOMETHING — I READ EVERYTHING</div>
+    <div class="blinks">
+      <a href="mailto:rhythmpg05@gmail.com">rhythmpg05@gmail.com <span class="arr">EMAIL ▸</span></a>
+      <a href="tel:+917973496638">+91-7973496638 <span class="arr">CALL ▸</span></a>
+      <a href="https://www.linkedin.com/in/rhythmgupta2405/" data-fill="LinkedIn">LinkedIn <span class="arr">add URL ▸</span></a>
+      <a href="https://github.com/Rhythmvp" data-fill="GitHub">GitHub <span class="arr">add URL ▸</span></a>
+      <a href="https://rhythm-production.vercel.app/" data-fill="Portfolio">Portfolio <span class="arr">add URL ▸</span></a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var fine=window.matchMedia("(pointer:fine)").matches;
+  document.body.classList.remove("locked");
+
+  /* ---------- brush cursor + ink trail ---------- */
+  var cur=document.getElementById("cursor");
+  var canvas=document.getElementById("inkcanvas");
+  if(fine && !reduce){
+    var ctx=canvas.getContext("2d"),W,H,last=null,lastT=0;
+    function size(){W=canvas.width=innerWidth;H=canvas.height=innerHeight;}
+    size();addEventListener("resize",size);
+    addEventListener("mousemove",function(e){
+      cur.style.left=e.clientX+"px";cur.style.top=e.clientY+"px";
+      var now=performance.now();
+      if(last){
+        var dx=e.clientX-last.x,dy=e.clientY-last.y;
+        var dist=Math.hypot(dx,dy),dt=Math.max(now-lastT,1);
+        var speed=dist/dt;                          // px per ms
+        var lw=Math.max(1.4,7-speed*4);             // faster = thinner (brush flick)
+        ctx.strokeStyle="rgba(210,59,46,0.55)";
+        ctx.lineCap="round";ctx.lineWidth=lw;
+        ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(e.clientX,e.clientY);ctx.stroke();
+      }
+      last={x:e.clientX,y:e.clientY};lastT=now;
+    },{passive:true});
+    addEventListener("mousedown",function(){cur.classList.add("press");});
+    addEventListener("mouseup",function(){cur.classList.remove("press");});
+    (function fade(){
+      ctx.globalCompositeOperation="destination-out";
+      ctx.fillStyle="rgba(0,0,0,0.10)";ctx.fillRect(0,0,W,H);
+      ctx.globalCompositeOperation="source-over";
+      requestAnimationFrame(fade);
+    })();
+  }
+
+  /* ---------- smooth menu nav + dim HUD on cover ---------- */
+  document.querySelectorAll("[data-nav]").forEach(function(a){
+    a.addEventListener("click",function(e){
+      e.preventDefault();
+      var t=document.querySelector(a.getAttribute("href"));
+      if(t)t.scrollIntoView({behavior:reduce?"auto":"smooth"});
+    });
+  });
+
+  /* ---------- contact bubble ---------- */
+  var wrap=document.getElementById("bubble-wrap");
+  function openB(e){if(e)e.preventDefault();wrap.classList.add("show");document.getElementById("close-bubble").focus();}
+  function closeB(){wrap.classList.remove("show");}
+  document.getElementById("open-bubble").addEventListener("click",openB);
+  document.getElementById("close-bubble").addEventListener("click",closeB);
+  wrap.addEventListener("click",function(e){if(e.target===wrap)closeB();});
+  addEventListener("keydown",function(e){if(e.key==="Escape")closeB();});
+
+  /* ---------- "add URL" placeholders ---------- */
+  document.querySelectorAll("[data-fill]").forEach(function(a){
+    a.addEventListener("click",function(e){
+      if(a.getAttribute("href")==="#"){e.preventDefault();
+        typeOut("<b>// "+a.getAttribute("data-fill")+" link not wired yet</b> — paste the URL in the HTML and it goes live.");}
+    });
+  });
+
+  /* ---------- reveal + chapter + ticker ---------- */
+  var chNo=document.getElementById("ch-no"),chTtl=document.getElementById("ch-ttl"),tk=document.getElementById("ticker-txt"),typer=null;
+  function typeOut(html){
+    if(reduce){tk.innerHTML=html;return;}
+    if(typer)clearInterval(typer);
+    var tmp=document.createElement("div");tmp.innerHTML=html;var plain=tmp.textContent,i=0;tk.textContent="";
+    typer=setInterval(function(){i++;tk.textContent=plain.slice(0,i);if(i>=plain.length){clearInterval(typer);tk.innerHTML=html;}},22);
+  }
+  var hud=document.getElementById("hud");
+  var revObs=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add("seen");revObs.unobserve(en.target);}});},{threshold:.12});
+  document.querySelectorAll(".rise").forEach(function(e){revObs.observe(e);});
+  var chObs=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){
+    var s=en.target;chNo.textContent=s.getAttribute("data-ch");chTtl.textContent=s.getAttribute("data-title");typeOut(s.getAttribute("data-tick"));
+    if(s.id==="cover")hud.classList.add("dim");else hud.classList.remove("dim");
+  }});},{threshold:.45});
+  document.querySelectorAll("[data-ch]").forEach(function(s){chObs.observe(s);});
+  // seed
+  (function(){var c=document.getElementById("cover");chNo.textContent=c.getAttribute("data-ch");chTtl.textContent=c.getAttribute("data-title");tk.innerHTML=c.getAttribute("data-tick");hud.classList.add("dim");})();
+
+  /* ---------- ambient sound (original WebAudio drone) ---------- */
+  var btn=document.getElementById("sound"),actx=null,master=null,nodes=[],on=false;
+  function startAudio(){
+    actx=new (window.AudioContext||window.webkitAudioContext)();
+    master=actx.createGain();master.gain.value=0;master.connect(actx.destination);
+    var lp=actx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=620;lp.connect(master);
+    [110,164.81,220].forEach(function(f,idx){
+      var o=actx.createOscillator();o.type="sine";o.frequency.value=f;
+      var g=actx.createGain();g.gain.value=idx===2?0.04:0.09;o.connect(g);g.connect(lp);o.start();nodes.push(o);
+      // slow breathing LFO
+      var lfo=actx.createOscillator();lfo.frequency.value=0.06+idx*0.02;var lg=actx.createGain();lg.gain.value=0.03;
+      lfo.connect(lg);lg.connect(g.gain);lfo.start();nodes.push(lfo);
+    });
+    master.gain.linearRampToValueAtTime(0.5,actx.currentTime+1.5);
+  }
+  btn.addEventListener("click",function(){
+    if(reduce)return;
+    if(!on){if(!actx)startAudio();else{actx.resume();master.gain.linearRampToValueAtTime(0.5,actx.currentTime+1.2);}
+      on=true;btn.classList.add("on");}
+    else{master.gain.linearRampToValueAtTime(0,actx.currentTime+0.8);setTimeout(function(){actx.suspend();},900);
+      on=false;btn.classList.remove("on");}
+  });
+})();
+</script>
+</body>
+</html>
